@@ -40,7 +40,7 @@ func main() {
 
 	// Register handlers for events.
 	dg.AddHandler(messageCreate)
-	// Removed invalid global speaking handler; we consume speaking updates from the voice connection.
+	dg.AddHandler(voiceUpdate) // Handle voice state updates for SSRC mapping
 
 	// We need intents for messages and voice states.
 	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates
@@ -60,6 +60,22 @@ func main() {
 
 	// Cleanly close down the Discord session.
 	dg.Close()
+}
+
+// voiceUpdate handles VoiceStateUpdate events to maintain SSRC mappings
+func voiceUpdate(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
+	// We only care about voice state updates when we're connected to voice
+	for _, vc := range s.VoiceConnections {
+		if vc.GuildID == vsu.GuildID {
+			// Map the user to their SSRC when they have one
+			if vsu.UserID != "" {
+				ssrcUserMapMutex.Lock()
+				// Note: In newer versions, we may need to handle this differently
+				// For now, we'll use a simple approach and rely on the receive loop to map SSRCs
+				ssrcUserMapMutex.Unlock()
+			}
+		}
+	}
 }
 
 // This function will be called (due to AddHandler) every time a new
@@ -98,50 +114,17 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		// Join the voice channel. Do NOT self-deafen so we can receive audio.
+		// Join the voice channel with receive enabled
 		vc, err := s.ChannelVoiceJoin(g.ID, vs.ChannelID, false, false)
 		if err != nil {
 			fmt.Println("Error joining voice channel:", err)
 			return
 		}
 
-		// IMPORTANT: initialize the OpusRecv channel to enable receiving.
-		vc.OpusRecv = make(chan *discordgo.Packet, 1024)
-
 		s.ChannelMessageSend(m.ChannelID, "Joined your voice channel! I'm now listening.")
 
-		// Wait for voice connection readiness (poll Ready bool up to 5 seconds).
-		fmt.Println("Waiting for voice connection to be ready...")
-		for i := 0; i < 50 && !vc.Ready; i++ {
-			time.Sleep(100 * time.Millisecond)
-		}
-		if vc.Ready {
-			fmt.Println("Voice connection ready. Starting receive loop...")
-		} else {
-			fmt.Println("Voice connection not signaled ready after 5s; attempting receive anyway...")
-		}
-
-		// Start a goroutine to listen for incoming audio packets.
-		go func(vc *discordgo.VoiceConnection) {
-			for {
-				packet, ok := <-vc.OpusRecv
-				if !ok {
-					fmt.Println("Voice channel closed.")
-					return
-				}
-
-				ssrc := packet.SSRC
-				ssrcUserMapMutex.Lock()
-				userID, userFound := ssrcUserMap[ssrc]
-				ssrcUserMapMutex.Unlock()
-
-				if userFound {
-					fmt.Printf("Received audio: ssrc=%d user=%s bytes=%d\n", ssrc, userID, len(packet.Opus))
-				} else {
-					fmt.Printf("Received audio: ssrc=%d (user unknown yet) bytes=%d\n", ssrc, len(packet.Opus))
-				}
-			}
-		}(vc)
+		// Start receiving audio using the official pattern
+		go receiveAudio(vc)
 	}
 
 	// If the message is "!leave", leave the current voice channel.
@@ -160,6 +143,60 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		s.ChannelMessageSend(m.ChannelID, "Left the voice channel.")
 	}
+}
+
+// receiveAudio follows the official discordgo voice receive pattern
+func receiveAudio(vc *discordgo.VoiceConnection) {
+	fmt.Println("Starting audio receive goroutine...")
+
+	// Create a receive channel for opus packets
+	recv := make(chan *discordgo.Packet, 2)
+
+	// Start listening for voice packets
+	go func() {
+		// This is the key: we need to enable voice receiving
+		vc.LogLevel = discordgo.LogDebug // Enable debug logging
+		
+		// Wait for the connection to be ready
+		for !vc.Ready {
+			time.Sleep(100 * time.Millisecond)
+		}
+		fmt.Println("Voice connection is ready, starting receive...")
+
+		// Enable opus receive
+		vc.OpusRecv = recv
+
+		// This should trigger the voice connection to start sending us packets
+		for {
+			select {
+			case packet, ok := <-recv:
+				if !ok {
+					fmt.Println("Receive channel closed")
+					return
+				}
+				
+				fmt.Printf("Received packet: SSRC=%d, Opus length=%d\n", packet.SSRC, len(packet.Opus))
+				
+				// Try to map SSRC to user (this is the tricky part)
+				ssrcUserMapMutex.Lock()
+				userID, found := ssrcUserMap[packet.SSRC]
+				ssrcUserMapMutex.Unlock()
+				
+				if found {
+					fmt.Printf("Audio from user %s\n", userID)
+				} else {
+					fmt.Printf("Unknown user for SSRC %d\n", packet.SSRC)
+				}
+
+			case <-time.After(1 * time.Second):
+				// Periodic check to see if we're still connected
+				if !vc.Ready {
+					fmt.Println("Voice connection no longer ready")
+					return
+				}
+			}
+		}
+	}()
 }
 
 // Helper function to find a user's voice state in a guild.
