@@ -4,10 +4,17 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+)
+
+var (
+	ssrcUserMap      = make(map[uint32]string)
+	ssrcUserMapMutex = &sync.Mutex{}
 )
 
 func main() {
@@ -31,10 +38,11 @@ func main() {
 		return
 	}
 
-	// Register the messageCreate func as a callback for MessageCreate events.
+	// Register handlers for events.
 	dg.AddHandler(messageCreate)
+	// Removed invalid global speaking handler; we consume speaking updates from the voice connection.
 
-	// In this example, we only care about receiving message events and voice state changes.
+	// We need intents for messages and voice states.
 	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates
 
 	// Open a websocket connection to Discord and begin listening.
@@ -90,14 +98,50 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		// Join the voice channel.
-		_, err = s.ChannelVoiceJoin(g.ID, vs.ChannelID, false, true)
+		// Join the voice channel. Do NOT self-deafen so we can receive audio.
+		vc, err := s.ChannelVoiceJoin(g.ID, vs.ChannelID, false, false)
 		if err != nil {
 			fmt.Println("Error joining voice channel:", err)
 			return
 		}
 
-		s.ChannelMessageSend(m.ChannelID, "Joined your voice channel!")
+		// IMPORTANT: initialize the OpusRecv channel to enable receiving.
+		vc.OpusRecv = make(chan *discordgo.Packet, 1024)
+
+		s.ChannelMessageSend(m.ChannelID, "Joined your voice channel! I'm now listening.")
+
+		// Wait for voice connection readiness (poll Ready bool up to 5 seconds).
+		fmt.Println("Waiting for voice connection to be ready...")
+		for i := 0; i < 50 && !vc.Ready; i++ {
+			time.Sleep(100 * time.Millisecond)
+		}
+		if vc.Ready {
+			fmt.Println("Voice connection ready. Starting receive loop...")
+		} else {
+			fmt.Println("Voice connection not signaled ready after 5s; attempting receive anyway...")
+		}
+
+		// Start a goroutine to listen for incoming audio packets.
+		go func(vc *discordgo.VoiceConnection) {
+			for {
+				packet, ok := <-vc.OpusRecv
+				if !ok {
+					fmt.Println("Voice channel closed.")
+					return
+				}
+
+				ssrc := packet.SSRC
+				ssrcUserMapMutex.Lock()
+				userID, userFound := ssrcUserMap[ssrc]
+				ssrcUserMapMutex.Unlock()
+
+				if userFound {
+					fmt.Printf("Received audio: ssrc=%d user=%s bytes=%d\n", ssrc, userID, len(packet.Opus))
+				} else {
+					fmt.Printf("Received audio: ssrc=%d (user unknown yet) bytes=%d\n", ssrc, len(packet.Opus))
+				}
+			}
+		}(vc)
 	}
 
 	// If the message is "!leave", leave the current voice channel.
