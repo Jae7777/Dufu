@@ -1,0 +1,8 @@
+# Environment variables
+.env
+
+# Binaries
+*.exe
+*.out
+AI-WAIFU-BOT
+AI-WAIFU-BOT.exe
