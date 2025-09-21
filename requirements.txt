@@ -1,0 +1,6 @@
+discord.py
+vosk
+PyNaCl
+python-dotenv
+watchdog
+

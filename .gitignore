@@ -1,8 +1,11 @@
-# Environment variables
-.env
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-# Binaries
-*.exe
-*.out
-AI-WAIFU-BOT
-AI-WAIFU-BOT.exe
+# Virtual environment
+venv/
+*.venv
+env/
+.env
