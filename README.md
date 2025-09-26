@@ -4,7 +4,7 @@
 
 Python 3.x
 
-Setup
+## Setup
 
 Create a virtual environment
 
@@ -25,3 +25,4 @@ On macOS / Linux:
 Deactivate when done
 
 ```deactivate```
+
