@@ -26,3 +26,8 @@ Deactivate when done
 
 ```deactivate```
 
+Install requirements:
+
+```pip install -r requirements.txt```
+
+
