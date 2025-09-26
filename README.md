@@ -27,15 +27,16 @@ Install requirements:
 
 Set Env Variables
 
-Start run.py:
+Start main.py:
 
-```python3 run.py```
+```python3 main.py```
 
 Test in Discord. (Make sure bot is in server)
 
 Deactivate when done
 
 ```deactivate```
+
 
 
 
