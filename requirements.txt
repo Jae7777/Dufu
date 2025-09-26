@@ -1,6 +1,5 @@
-discord.py
-vosk
-PyNaCl
+py-cord[voice]
+deepgram-sdk
 python-dotenv
 watchdog
 
