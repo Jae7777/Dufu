@@ -32,34 +32,6 @@ async def on_message(message):
         return
     await bot.process_commands(message)
 
-# In-memory store for active recordings
-connections = {}
-
-class WaveSink(Sink):
-    def __init__(self, destination):
-        self.destination = destination
-        self.file = None
-
-    def write(self, data, user):
-        # This is our debug print. If this doesn't show up, the bot isn't receiving audio.
-        print(f"Received {len(data)} bytes of audio data from user {user}.")
-        
-        # We receive PCM 16-bit 48kHz stereo data.
-        # Initialize the wave file on the first write.
-        if not self.file:
-            print(f"First audio packet received. Creating file: {self.destination}")
-            self.file = wave.open(self.destination, 'wb')
-            self.file.setnchannels(2)  # Stereo
-            self.file.setsampwidth(2)  # 16-bit
-            self.file.setframerate(48000)
-        self.file.writeframes(data)
-
-    def cleanup(self):
-        # This is called when the recording is stopped.
-        if self.file:
-            self.file.close()
-            self.file = None
-
 @bot.command()
 async def join(ctx):
     """Joins a voice channel and starts recording to output.wav."""
@@ -71,9 +43,7 @@ async def join(ctx):
     if ctx.voice_client is not None:
         return await ctx.voice_client.move_to(channel)
 
-    # By setting self_deaf=True, we tell Discord we will not be speaking.
-    # This is a good practice for listening bots.
-    vc = await channel.connect(self_deaf=True)
+    vc = await channel.connect()
 
     # The file where the audio will be saved.
     output_file = 'output.wav'
