@@ -10,7 +10,6 @@ Create a virtual environment
 
 ```python3 -m venv venv```
 
-
 Activate the virtual environment
 
 On Windows:
@@ -26,6 +25,8 @@ Install requirements:
 
 ```pip install -r requirements.txt```
 
+Set Env Variables
+
 Start run.py:
 
 ```python3 run.py```
@@ -35,6 +36,7 @@ Test in Discord. (Make sure bot is in server)
 Deactivate when done
 
 ```deactivate```
+
 
 
 
