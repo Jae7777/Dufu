@@ -1,68 +1,195 @@
-import discord
 import asyncio
-import os
-import tempfile
-from collections import defaultdict, deque
+import discord
 from datetime import datetime
-import openai
-from bot import active_connections, conversation_history, current_voice
+from discord.ext import voice_recv
+from VoiceConnection import VoiceConnection
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+class BotCommands:
+    """Encapsulates all voice-related command logic."""
 
-# ---------------------------
-# Voice Command Functions
-# ---------------------------
-async def join_voice(interaction: discord.Interaction):
-    """Join the user's voice channel"""
-    if not interaction.user.voice or not interaction.user.voice.channel:
-        await interaction.response.send_message(
-            "❌ You need to be in a voice channel first!", ephemeral=True
+    def __init__(self, active_connections, conversation_history, available_voices, current_voice="default"):
+        self.active_connections = active_connections
+        self.conversation_history = conversation_history
+        self.available_voices = available_voices
+        self.current_voice = current_voice
+
+    # -----------------------------
+    # Helper Methods
+    # -----------------------------
+    async def delayed_disconnect(self, guild_id, delay=300):
+        """Disconnect after delay if channel is still empty"""
+        await asyncio.sleep(delay)
+
+        if guild_id in self.active_connections:
+            connection = self.active_connections[guild_id]
+            if connection.voice_client.channel:
+                members = [m for m in connection.voice_client.channel.members if not m.bot]
+                if not members:
+                    await self.leave_voice_channel(guild_id)
+
+    async def leave_voice_channel(self, guild_id):
+        """Clean up and leave voice channel"""
+        if guild_id in self.active_connections:
+            connection = self.active_connections[guild_id]
+
+            await connection.cleanup()
+
+            if connection.voice_client.is_connected():
+                await connection.voice_client.disconnect()
+
+            del self.active_connections[guild_id]
+            print(f"🚪 Left voice channel in guild {guild_id}")
+
+    # -----------------------------
+    # Command Logic
+    # -----------------------------
+    async def join_voice(self, interaction: discord.Interaction):
+        """Join the user's voice channel and start AI conversation"""
+        if not interaction.user.voice:
+            return await interaction.response.send_message("❌ You need to be in a voice channel first!", ephemeral=True)
+
+        guild_id = interaction.guild.id
+
+        if guild_id in self.active_connections:
+            return await interaction.response.send_message(
+                "🎙️ I'm already active in a voice channel! Use `/leave` to disconnect first.",
+                ephemeral=True
+            )
+
+        voice_channel = interaction.user.voice.channel
+        await interaction.response.defer()
+
+        try:
+            # Permission check
+            permissions = voice_channel.permissions_for(interaction.guild.me)
+            if not permissions.connect or not permissions.speak:
+                return await interaction.followup.send("❌ I need permission to connect and speak in that voice channel!")
+
+            print(f"🔗 Connecting to {voice_channel.name} in {interaction.guild.name}...")
+
+            try:
+                voice_client = await asyncio.wait_for(
+                    voice_channel.connect(cls=voice_recv.VoiceRecvClient),
+                    timeout=15.0
+                )
+            except asyncio.TimeoutError:
+                return await interaction.followup.send("❌ Connection timed out. Please try again.")
+            except Exception as e:
+                return await interaction.followup.send(f"❌ Failed to connect: {str(e)}")
+
+            connection = VoiceConnection(
+                self.current_voice,
+                guild_id,
+                voice_client,
+                self.conversation_history,
+                interaction.client
+            )
+            self.active_connections[guild_id] = connection
+
+            await connection.start_listening()
+            print(f"✅ Connected and listening in {voice_channel.name}")
+
+            embed = discord.Embed(
+                title="🎙️ Voice AI Active!",
+                description=(
+                    f"I'm now listening in **{voice_channel.name}**\n\n"
+                    "💬 Just speak naturally and I'll respond!\n"
+                    "🚪 Use `/leave` when you're done"
+                ),
+                color=0x00ff00
+            )
+            await interaction.followup.send(embed=embed)
+
+        except Exception as e:
+            print(f"❌ Error in join command: {e}")
+            import traceback
+            traceback.print_exc()
+            await interaction.followup.send(f"❌ Error: {str(e)}")
+
+    async def leave_voice(self, interaction: discord.Interaction):
+        """Leave the voice channel and save conversation"""
+        guild_id = interaction.guild.id
+        if guild_id not in self.active_connections:
+            return await interaction.response.send_message("❌ I'm not in a voice channel!", ephemeral=True)
+
+        try:
+            history = self.conversation_history.get(guild_id, [])
+            message_count = len(history)
+
+            await self.leave_voice_channel(guild_id)
+
+            embed = discord.Embed(
+                title="👋 Left Voice Channel",
+                description=f"💾 Saved conversation with **{message_count}** messages\n📊 Use `/history` to view recent conversations",
+                color=0xff9900
+            )
+            await interaction.response.send_message(embed=embed)
+
+        except Exception as e:
+            print(f"Error leaving voice channel: {e}")
+            await interaction.response.send_message(f"❌ Error leaving channel: {str(e)}")
+
+    async def show_history(self, interaction: discord.Interaction):
+        """Show recent conversation history"""
+        guild_id = interaction.guild.id
+        history = self.conversation_history.get(guild_id, [])
+        if not history:
+            return await interaction.response.send_message("📝 No conversation history found.", ephemeral=True)
+
+        embed = discord.Embed(
+            title="💬 Recent Conversation History",
+            color=0x0099ff,
+            timestamp=datetime.now()
         )
-        return
 
-    channel = interaction.user.voice.channel
-    guild_id = interaction.guild.id
+        recent_messages = list(history)[-10:]
+        history_text = ""
+        for msg in recent_messages:
+            timestamp = datetime.fromisoformat(msg["timestamp"]).strftime("%H:%M")
+            history_text += f"**{msg['user']}** ({timestamp}): {msg['text']}\n"
 
-    if guild_id in active_connections:
-        await interaction.response.send_message("✅ Already connected!", ephemeral=True)
-        return
+        if len(history_text) > 4000:
+            history_text = history_text[:4000] + "...\n*[Truncated]*"
 
-    voice_client = await channel.connect()
-    active_connections[guild_id] = voice_client
-    await interaction.response.send_message(f"🎙️ Joined {channel.name}!", ephemeral=True)
+        embed.description = history_text or "No recent messages"
+        embed.set_footer(text=f"Total messages: {len(history)}")
 
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
-async def leave_voice(interaction: discord.Interaction):
-    """Leave the current voice channel"""
-    guild_id = interaction.guild.id
-    if guild_id not in active_connections:
-        await interaction.response.send_message("❌ Not connected to any channel!", ephemeral=True)
-        return
+    async def show_status(self, interaction: discord.Interaction):
+        """Show current voice connection status"""
+        guild_id = interaction.guild.id
+        embed = discord.Embed(title="🤖 Voice Status", color=0x0099ff)
 
-    voice_client = active_connections[guild_id]
-    await voice_client.disconnect()
-    del active_connections[guild_id]
-    await interaction.response.send_message("🛑 Left the voice channel!", ephemeral=True)
+        if guild_id in self.active_connections:
+            connection = self.active_connections[guild_id]
+            channel = connection.voice_client.channel
 
+            embed.add_field(
+                name="📡 Connection Status",
+                value=f"✅ Connected to **{channel.name}**\n"
+                      f"🎧 Listening: {'Yes' if connection.is_listening else 'No'}\n"
+                      f"👥 Users in channel: {len([m for m in channel.members if not m.bot])}",
+                inline=False
+            )
 
-async def show_history(interaction: discord.Interaction):
-    """Show last 5 messages of conversation"""
-    guild_id = interaction.guild.id
-    history = conversation_history.get(guild_id)
-    if not history or len(history) == 0:
-        await interaction.response.send_message("💬 No conversation history yet.", ephemeral=True)
-        return
+            if connection.stt_connections:
+                users = ", ".join([f"<@{uid}>" for uid in connection.stt_connections.keys()])
+                embed.add_field(name="🎙️ Active Speakers", value=users, inline=False)
 
-    last_messages = list(history)[-5:]
-    formatted = "\n".join(f"**{msg['user']}**: {msg['text']}" for msg in last_messages)
-    await interaction.response.send_message(f"💬 Last messages:\n{formatted}", ephemeral=True)
+            history = self.conversation_history.get(guild_id, [])
+            if history:
+                embed.add_field(
+                    name="💬 Conversation Stats",
+                    value=f"Messages: {len(history)}\n"
+                          f"Last activity: <t:{int(datetime.fromisoformat(history[-1]['timestamp']).timestamp())}:R>",
+                    inline=False
+                )
+        else:
+            embed.add_field(
+                name="📡 Connection Status",
+                value="❌ Not connected to any voice channel\nUse `/vc` to join your voice channel",
+                inline=False
+            )
 
-
-async def show_status(interaction: discord.Interaction):
-    """Show bot connection status"""
-    guild_id = interaction.guild.id
-    if guild_id in active_connections:
-        vc = active_connections[guild_id]
-        await interaction.response.send_message(f"✅ Connected to **{vc.channel.name}**", ephemeral=True)
-    else:
-        await interaction.response.send_message("❌ Not connected to any voice channel", ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
