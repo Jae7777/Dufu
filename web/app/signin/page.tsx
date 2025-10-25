@@ -55,7 +55,7 @@ export default function LoginPage() {
       setIsLoading(true);
       setError("");
       await authClient.signIn.social({
-        provider: provider as any,
+        provider: provider,
         callbackURL: "/",
       });
     } catch (err) {
@@ -161,7 +161,7 @@ export default function LoginPage() {
         </Button>
         
         <p className="text-center text-sm text-muted-foreground">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/signup" className="text-primary hover:underline">
             Sign up
           </Link>

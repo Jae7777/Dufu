@@ -58,7 +58,7 @@ export default function SignupPage() {
       setIsLoading(true);
       setError("");
       await authClient.signIn.social({
-        provider: provider as any,
+        provider: provider,
         callbackURL: "/",
       });
     } catch (err) {
