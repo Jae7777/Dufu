@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 import os
 import asyncio
-import wave
 import tempfile
 from collections import defaultdict, deque
 from datetime import datetime
