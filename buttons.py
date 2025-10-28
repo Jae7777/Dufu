@@ -1,6 +1,6 @@
 import discord
 
-class Buttons(discord.ui.View):
+class Menu(discord.ui.View):
     """Interactive buttons for controlling the Voice AI Bot."""
 
     def __init__(self, commands_handler, bot, timeout=180):

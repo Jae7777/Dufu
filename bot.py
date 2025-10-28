@@ -106,23 +106,18 @@ async def voice(interaction: discord.Interaction, voice: str):
 async def status(interaction: discord.Interaction):
     await commands_handler.show_status(interaction)
 
+@bot.tree.command(name="menu", description="Show the Voice AI control menu.")
+async def menu(interaction: discord.Interaction):
+    await commands_handler.menu(interaction)
+
+@bot.tree.command(name="change_voice", description="Change the TTS voice of the bot.")
+async def change_voice(interaction: discord.Interaction, voice: str):
+    await commands_handler.change_voice(interaction)
+
 
 @bot.tree.command(name="ping", description="Check if the bot is alive")
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message("🏓 Pong! I'm alive!", ephemeral=True)
-
-@bot.tree.command(name="menu", description="Show the Voice AI control menu.")
-async def menu(interaction: discord.Interaction):
-    """Slash command to display the Voice AI menu buttons."""
-    embed = discord.Embed(
-        title="🎛️ Voice AI Control Panel",
-        description="Use the buttons below to manage the Voice AI bot.",
-        color=discord.Color.blurple()
-    )
-    embed.set_footer(text="Use these buttons to control the voice system.")
-    
-    view = Buttons(commands_handler, bot)
-    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
 # Error handling

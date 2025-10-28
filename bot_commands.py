@@ -3,6 +3,7 @@ import discord
 from datetime import datetime
 from discord.ext import voice_recv
 from VoiceConnection import VoiceConnection
+from buttons import Menu
 
 class BotCommands:
     """Encapsulates all voice-related command logic."""
@@ -193,3 +194,27 @@ class BotCommands:
             )
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    async def change_voice(self, interaction: discord.Interaction, voice: str):
+        """Change the TTS voice"""
+        if voice not in self.available_voices:
+            voices_list = ", ".join(self.available_voices)
+            return await interaction.response.send_message(
+                f"❌ Voice '{voice}' not found. Available voices: {voices_list}",
+                ephemeral=True
+            )
+
+        self.current_voice = voice
+        await interaction.response.send_message(f"✅ TTS voice changed to **{voice}**", ephemeral=True)
+    
+    async def menu(self, interaction: discord.Interaction):
+        """Show the Voice AI control menu buttons."""
+        embed = discord.Embed(
+            title="🎛️ Voice AI Control Panel",
+            description="Use the buttons below to manage the Voice AI bot.",
+            color=discord.Color.blurple()
+        )
+        embed.set_footer(text="Use these buttons to control the voice system.")
+        
+        view = Menu(self, interaction.client)
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
