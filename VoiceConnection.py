@@ -3,7 +3,7 @@ import os
 import tempfile
 import openai
 from discord.ext import voice_recv
-import STTConnection
+from STTConnection import STTConnection
 from datetime import datetime
 import asyncio
 

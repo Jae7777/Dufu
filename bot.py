@@ -22,7 +22,7 @@ intents.guilds = True
 # Note: message_content intent is privileged and must be enabled in Discord Developer Portal
 intents.message_content = True
 
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix='/', intents=intents)
 
 # Global variables for managing connections and conversations
 active_connections = {}  # guild_id: VoiceConnection
@@ -85,12 +85,12 @@ async def on_voice_state_update(member, before, after):
 
 @bot.tree.command(name="vc", description="Join your voice channel and start listening")
 async def vc(interaction: discord.Interaction):
-    await commands_handler.join_vc(interaction, bot)
+    await commands_handler.join_voice(interaction, bot)
 
 
 @bot.tree.command(name="leave", description="Leave voice channel and save conversation")
 async def leave(interaction: discord.Interaction):
-    await commands_handler.leave_vc(interaction)
+    await commands_handler.leave_voice(interaction)
 
 
 @bot.tree.command(name="history", description="View recent conversation history")
@@ -122,7 +122,7 @@ async def menu(interaction: discord.Interaction):
     )
     embed.set_footer(text="Use these buttons to control the voice system.")
     
-    view = Buttons(commands_handler)
+    view = Buttons(commands_handler, bot)
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 

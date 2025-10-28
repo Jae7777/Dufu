@@ -1,4 +1,9 @@
+import asyncio
+from datetime import datetime
 import io
+import wave
+
+import openai
 
 class STTConnection:
     """Handles speech-to-text for individual users"""

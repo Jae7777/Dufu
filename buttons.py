@@ -3,14 +3,15 @@ import discord
 class Buttons(discord.ui.View):
     """Interactive buttons for controlling the Voice AI Bot."""
 
-    def __init__(self, commands_handler, *, timeout=180):
+    def __init__(self, commands_handler, bot, timeout=180):
         super().__init__(timeout=timeout)
         self.commands_handler = commands_handler  # <-- pass BotCommands instance
+        self.bot = bot
 
     @discord.ui.button(label="Join Voice", style=discord.ButtonStyle.green, emoji="🎙️")
     async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         button.disabled = True
-        await self.commands_handler.join_voice(interaction)
+        await self.commands_handler.join_voice(interaction, self.bot)
         button.disabled = False
 
     @discord.ui.button(label="Leave Voice", style=discord.ButtonStyle.red, emoji="🛑")

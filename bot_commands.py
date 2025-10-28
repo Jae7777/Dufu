@@ -43,7 +43,7 @@ class BotCommands:
     # -----------------------------
     # Command Logic
     # -----------------------------
-    async def join_voice(self, interaction: discord.Interaction):
+    async def join_voice(self, interaction: discord.Interaction, bot):
         """Join the user's voice channel and start AI conversation"""
         if not interaction.user.voice:
             return await interaction.response.send_message("❌ You need to be in a voice channel first!", ephemeral=True)
