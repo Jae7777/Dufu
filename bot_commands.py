@@ -3,7 +3,7 @@ import discord
 from datetime import datetime
 from discord.ext import voice_recv
 from VoiceConnection import VoiceConnection
-from buttons import Menu
+from buttons import Menu, VoiceSelect
 
 class BotCommands:
     """Encapsulates all voice-related command logic."""
@@ -195,17 +195,36 @@ class BotCommands:
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    async def change_voice(self, interaction: discord.Interaction, voice: str):
-        """Change the TTS voice"""
-        if voice not in self.available_voices:
-            voices_list = ", ".join(self.available_voices)
-            return await interaction.response.send_message(
-                f"❌ Voice '{voice}' not found. Available voices: {voices_list}",
-                ephemeral=True
-            )
+    async def change_voice(self, interaction: discord.Interaction, voice: str = None):
+        """Change TTS voice or show a selector UI."""
+        # Direct set if valid key provided
+        if voice:
+            key = str(voice).lower()
+            if key in self.available_voices:
+                self.current_voice = key
+                friendly = self.available_voices[key]
+                
+                return
+            else:
+                info = f"❌ Unknown voice '{voice}'. Choose from the menu below:"
+        else:
+            info = "Select a TTS voice from the menu below:"
 
-        self.current_voice = voice
-        await interaction.response.send_message(f"✅ TTS voice changed to **{voice}**", ephemeral=True)
+        # Show dropdown selector
+        view = discord.ui.View(timeout=120)
+        view.add_item(VoiceSelect(self, self.available_voices))
+        try:
+            if interaction.response.is_done():
+                await interaction.followup.send(info, view=view, ephemeral=True)
+            else:
+                await interaction.response.send_message(info, view=view, ephemeral=True)
+        except Exception as e:
+            if interaction.response.is_done():
+                await interaction.followup.send(f"❌ Failed to show selector: {e}", ephemeral=True)
+            else:
+                await interaction.response.send_message(f"❌ Failed to show selector: {e}", ephemeral=True)
+        
+        
     
     async def menu(self, interaction: discord.Interaction):
         """Show the Voice AI control menu buttons."""

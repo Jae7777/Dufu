@@ -2,15 +2,10 @@ import discord
 from discord.ext import commands
 import os
 import asyncio
-import tempfile
 from collections import defaultdict, deque
-from datetime import datetime
 from dotenv import load_dotenv
 import openai
-import VoiceConnection
-import STTConnection
 from bot_commands import BotCommands
-from buttons import Buttons
 
 load_dotenv()
 
@@ -98,8 +93,8 @@ async def history(interaction: discord.Interaction):
 
 
 @bot.tree.command(name="voice", description="Change TTS voice")
-async def voice(interaction: discord.Interaction, voice: str):
-    await commands_handler.change_voice(interaction, voice)
+async def voice(interaction: discord.Interaction):
+    await commands_handler.change_voice(interaction)
 
 
 @bot.tree.command(name="status", description="Check bot status")
@@ -110,11 +105,7 @@ async def status(interaction: discord.Interaction):
 async def menu(interaction: discord.Interaction):
     await commands_handler.menu(interaction)
 
-@bot.tree.command(name="change_voice", description="Change the TTS voice of the bot.")
-async def change_voice(interaction: discord.Interaction, voice: str):
-    await commands_handler.change_voice(interaction)
-
-
+    
 @bot.tree.command(name="ping", description="Check if the bot is alive")
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message("🏓 Pong! I'm alive!", ephemeral=True)
