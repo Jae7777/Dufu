@@ -33,7 +33,12 @@ class Menu(discord.ui.View):
         button.disabled = False
 
 
-    @discord.ui.button(label="Change Voice", style=discord.ButtonStyle.purple, emoji="🗣️")
+    # @discord.ui.button(label="Change Voice", style=discord.ButtonStyle.purple, emoji="🗣️")
+    # async def change_voice_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    #     button.disabled = True
+    #     await self.commands_handler.change_voice(interaction)
+    #     button.disabled = False
+    @discord.ui.button(label="Change Voice", style=discord.ButtonStyle.gray, emoji="🗣️")
     async def change_voice_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         button.disabled = True
         await self.commands_handler.change_voice(interaction)
