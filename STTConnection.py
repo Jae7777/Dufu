@@ -1,9 +1,18 @@
 import asyncio
 from datetime import datetime
+import audioop
 import io
 import wave
 
 import openai
+
+
+MIN_DURATION_MS = 250        # minimum audio duration to consider (ms)
+RMS_THRESHOLD = 600          # adjust: lower -> more sensitive, higher -> stricter
+
+def _pcm_duration_ms(pcm_bytes, sample_rate, channels, sample_width=2):
+    samples = len(pcm_bytes) // (sample_width * channels)
+    return (samples / sample_rate) * 1000.0
 
 class STTConnection:
     """Handles speech-to-text for individual users"""
@@ -58,6 +67,24 @@ class STTConnection:
                 self.processing_audio = False
                 return
             
+            # Quick duration and energy checks to avoid whisper hallucinations on near-silence
+            duration_ms = _pcm_duration_ms(audio_data, self.sample_rate, self.channels)
+            try:
+                rms = audioop.rms(audio_data, 2)  # 16-bit PCM
+            except Exception:
+                rms = 0
+
+            if duration_ms < MIN_DURATION_MS:
+                print(f"Skipping: audio too short ({duration_ms:.1f} ms)")
+                self.processing_audio = False
+                return
+
+            if rms < RMS_THRESHOLD:
+                print(f"Skipping: low energy audio (rms={rms})")
+                self.processing_audio = False
+                return
+            
+
             # Convert to format suitable for Whisper STT
             audio_wav = self._convert_to_wav(audio_data)
             

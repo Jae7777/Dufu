@@ -136,7 +136,7 @@ class VoiceConnection:
                 if error:
                     print(f"Playback error: {error}")
                 else:
-                    print(f"✅ Finished playing anime TTS: {text}")
+                    print(f"✅ Finished playing TTS: {text}")
                 
                 # Clean up temporary file
                 try:
@@ -147,7 +147,7 @@ class VoiceConnection:
             
             # Play the audio in the voice channel
             self.voice_client.play(audio_source, after=after_playing)
-            print(f"🎌 Playing anime-style TTS in voice channel: {text}")
+            print(f"Playing TTS in voice channel: {text}")
             
         except Exception as e:
             print(f"Error in OpenAI TTS: {e}")
