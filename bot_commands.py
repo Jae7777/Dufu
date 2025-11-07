@@ -13,6 +13,7 @@ class BotCommands:
         self.conversation_history = conversation_history
         self.available_voices = available_voices
         self.current_voice = current_voice
+        self.default_personality = "You are Dufu, a cute and friendly anime-style AI assistant in a Discord voice channel. Speak in a cheerful, energetic way like an anime character. Keep responses brief (1-2 sentences) and very engaging. You're speaking out loud, so avoid markdown formatting. Be enthusiastic and kawaii!"
 
     # -----------------------------
     # Helper Methods
@@ -83,7 +84,8 @@ class BotCommands:
                 guild_id,
                 voice_client,
                 self.conversation_history,
-                interaction.client
+                interaction.client,
+                self.default_personality
             )
             self.active_connections[guild_id] = connection
 
@@ -202,7 +204,6 @@ class BotCommands:
             key = str(voice).lower()
             if key in self.available_voices:
                 self.current_voice = key
-                friendly = self.available_voices[key]
                 
                 return
             else:
@@ -237,3 +238,51 @@ class BotCommands:
         
         view = Menu(self, interaction.client)
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    
+
+    async def set_personality(self, interaction: discord.Interaction, prompt: str):
+        guild = interaction.guild
+        guild_id = guild.id if guild else None
+
+        prompt = str(prompt).strip()
+        if not prompt:
+            try:
+                await interaction.response.send_message("❌ Empty prompt provided.", ephemeral=True)
+            except Exception:
+                if interaction.response.is_done():
+                    await interaction.followup.send("❌ Empty prompt provided.", ephemeral=True)
+            return
+
+        # If there's an active connection for this guild, update it directly
+        if guild_id and guild_id in self.active_connections:
+            connection = self.active_connections[guild_id]
+            connection.personality_prompt = prompt
+
+            # record system message in history
+            self.conversation_history[guild_id].append({
+                "user": "System",
+                "text": f"Personality changed to: {prompt}",
+                "timestamp": datetime.now().isoformat()
+            })
+
+            msg = f"✅ Prompt:\n'{prompt}'\nupdated for the active call and added to conversation history."
+            try:
+                if interaction.response.is_done():
+                    await interaction.followup.send(msg, ephemeral=True)
+                else:
+                    await interaction.response.send_message(msg, ephemeral=True)
+            except Exception:
+                pass
+            return
+
+        # No active connection: save as default for future sessions (on this handler)
+        self.default_personality = prompt
+        msg = f"✅ Prompt:\n'{prompt}'\nsaved as the default for future voice sessions."
+
+        try:
+            if interaction.response.is_done():
+                await interaction.followup.send(msg, ephemeral=True)
+            else:
+                await interaction.response.send_message(msg, ephemeral=True)
+        except Exception:
+            pass

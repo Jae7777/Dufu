@@ -7,11 +7,12 @@ from STTConnection import STTConnection
 from datetime import datetime
 import asyncio
 
-
 class VoiceConnection:
     """Manages voice connection, STT, and TTS for a guild"""
-    
-    def __init__(self, current_voice, guild_id, voice_client, conversation_history, bot):
+
+    def __init__(self, current_voice, guild_id, voice_client, conversation_history, bot, 
+                 personality_prompt):
+        print(personality_prompt)
         self.guild_id = guild_id
         self.voice_client = voice_client
         self.stt_connections = {}  # user_id: STTConnection
@@ -19,7 +20,8 @@ class VoiceConnection:
         self.conversation_history = conversation_history
         self.bot = bot
         self.voice = current_voice
-        
+        self.personality_prompt = personality_prompt
+
     async def start_listening(self):
         """Start listening to voice channel"""
         if not self.is_listening:
@@ -72,7 +74,7 @@ class VoiceConnection:
         try:
             # Build context from conversation history
             messages = [
-                {"role": "system", "content": "You are Dufu, a cute and friendly anime-style AI assistant in a Discord voice channel. Speak in a cheerful, energetic way like an anime character. Use casual expressions like 'quack~' occasionally. Keep responses brief (1-2 sentences) and very engaging. You're speaking out loud, so avoid markdown formatting. Be enthusiastic and kawaii!"}
+                {"role": "system", "content": self.personality_prompt}
             ]
             
             # Add recent conversation history
@@ -165,9 +167,9 @@ class VoiceConnection:
                 if not text_channel and guild.text_channels:
                     text_channel = guild.text_channels[0]
                 
-                if text_channel:
-                    await text_channel.send(f"🎌 **Anime Bot says:** {text}", tts=True)
-                    print(f"🔊 Fallback TTS sent to #{text_channel.name}")
+                # if text_channel:
+                #     await text_channel.send(f"🎌 **Anime Bot says:** {text}")
+                #     print(f"🔊 Fallback TTS sent to #{text_channel.name}")
                     
             except Exception as fallback_error:
                 print(f"Fallback TTS also failed: {fallback_error}")

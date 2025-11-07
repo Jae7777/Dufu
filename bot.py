@@ -110,6 +110,9 @@ async def menu(interaction: discord.Interaction):
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message("🏓 Pong! I'm alive!", ephemeral=True)
 
+@bot.tree.command(name="personality", description="Set a custom personality prompt for the bot")
+async def personality(interaction: discord.Interaction, prompt: str):
+    await commands_handler.set_personality(interaction, prompt)
 
 # Error handling
 @bot.tree.error
