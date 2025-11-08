@@ -54,7 +54,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", sizes: "any" },
       { url: "/icon-16x16.png", sizes: "16x16", type: "image/png" }, // TODO: Create these icon files
       { url: "/icon-32x32.png", sizes: "32x32", type: "image/png" },
     ],
