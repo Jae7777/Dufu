@@ -16,7 +16,7 @@ intents.guilds = True
 # Note: message_content intent is privileged and must be enabled in Discord Developer Portal
 intents.message_content = True
 
-bot = commands.Bot(command_prefix='/', intents=intents)
+bot = commands.Bot(command_prefix=';', intents=intents)
 
 # Global variables for managing connections and conversations
 active_connections = {}  # guild_id: VoiceConnection
