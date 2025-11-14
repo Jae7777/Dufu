@@ -126,7 +126,7 @@ class VoiceConnection:
             
             # Create FFmpeg audio source from MP3
             audio_source = discord.FFmpegPCMAudio(temp_file_path)
-            print(temp_file_path)
+            
             # Stop any currently playing audio
             if self.voice_client.is_playing():
                 self.voice_client.stop()

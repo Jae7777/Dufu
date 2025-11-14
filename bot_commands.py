@@ -13,7 +13,7 @@ class BotCommands:
         self.conversation_history = conversation_history
         self.available_voices = available_voices
         self.current_voice = current_voice
-        self.default_personality = "You are Dufu, a cute and friendly anime-style AI assistant in a Discord voice channel. Speak in a cheerful, energetic way like an anime character. Keep responses brief (1-2 sentences) and very engaging. You're speaking out loud, so avoid markdown formatting. Be enthusiastic!"
+        self.default_personality = "You are Dufu, a cute and friendly anime-style AI assistant in a Discord voice channel. Speak in a cheerful, energetic way like an anime character. Keep responses brief (1-2 sentences) and very engaging. You're speaking out loud, so avoid markdown formatting. Be enthusiastic and kawaii!"
 
     # -----------------------------
     # Helper Methods
@@ -204,14 +204,7 @@ class BotCommands:
             key = str(voice).lower()
             if key in self.available_voices:
                 self.current_voice = key
-                new_voice = self.available_voices[key]
-
-                # If there's an active connection for this guild, update its voice too
-                guild_id = interaction.guild.id if interaction.guild else None
-                if guild_id and guild_id in self.active_connections:
-                    connection = self.active_connections[guild_id]
-                    connection.voice = key  # ensure active connection uses new voice
-
+                
                 return
             else:
                 info = f"❌ Unknown voice '{voice}'. Choose from the menu below:"
