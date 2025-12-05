@@ -21,13 +21,21 @@ venv\Scripts\activate
 Activate on macOS/Linux:
 source venv/bin/activate
 
-2. Install Dependencies:
+2. Install FFmpeg (Required)
+
+FFmpeg is required for audio processing.
+
+Windows:  
+Download from https://www.gyan.dev/ffmpeg/builds/  
+Add the `bin` folder to PATH.
+
+3. Install Dependencies:
 pip install -r requirements.txt
 
-3. Set Up Environment Variables:
+4. Set Up Environment Variables:
 Copy .env.example to .env and fill in your API keys.
 
-4. Configure Your Bot:
+5. Configure Your Bot:
 
 Discord Setup:
 - Go to Discord Developer Portal
@@ -44,7 +52,7 @@ Set the Bot Permissions:
 Invite URL template:
 https://discord.com/api/oauth2/authorize?client_id=YOUR_BOT_CLIENT_ID&permissions=3146752&scope=bot%20applications.commands
 
-5. API Services Setup:
+6. API Services Setup:
 OpenAI (Required):
 - Generate an API key
 - Add OPENAI_API_KEY to .env
@@ -94,3 +102,4 @@ Performance Tips:
 
 Logs:
 Debug output in console.
+
