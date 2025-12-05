@@ -57,7 +57,7 @@ Your bot needs these permissions in Discord servers:
 - Send Messages
 
 #### Invite URL:
-Use this URL template to invite your bot:
+Use this URL template to invite your bot to a discord server:
 ```
 https://discord.com/api/oauth2/authorize?client_id=YOUR_BOT_CLIENT_ID&permissions=3146752&scope=bot%20applications.commands
 ```
@@ -87,4 +87,5 @@ https://discord.com/api/oauth2/authorize?client_id=YOUR_BOT_CLIENT_ID&permission
 3. **AI Response**: Bot transcribes, generates response, and speaks back
 4. **Continue**: Have natural conversations
 5. **Leave**: Use `/leave` to disconnect and save history
+
 
