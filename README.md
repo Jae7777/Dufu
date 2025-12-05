@@ -10,7 +10,7 @@ This Discord bot joins voice channels, listens to speech, transcribes it using O
 - Smart voice activity detection
 - Status monitoring and management
 
-## Installation
+## 1. Installation
 
 1. Create a Virtual Environment:
 python3 -m venv venv
@@ -32,74 +32,59 @@ Add the `bin` folder to PATH.
 3. Install Dependencies:
 pip install -r requirements.txt
 
-4. Set Up Environment Variables:
-Copy .env.example to .env and fill in your API keys.
+### 2. Set Up Environment Variables
+Copy `.env.example` to `.env` and fill in your API keys:
+```bash
+cp .env.example .env
+```
 
-5. Configure Your Bot:
+### 3. Configure Your Bot
 
-Discord Setup:
-- Go to Discord Developer Portal
-- Create a new application
-- Create a bot and copy the token
-- Enable Message Content Intent and optionally Server Members Intent
+#### Discord Setup:
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Create a new application
+3. Go to the "Bot" section
+4. Create a bot and copy the token
+5. **IMPORTANT**: Enable these privileged intents:
+   - ✅ **Message Content Intent** (Required for voice commands)
+   - ✅ **Server Members Intent** (Optional, for better user detection)
 
-Set the Bot Permissions:
-- Connect
-- Speak
+#### Bot Permissions:
+Your bot needs these permissions in Discord servers:
+- Connect (to join voice channels)
+- Speak (to play TTS audio)  
 - Use Slash Commands
 - Send Messages
 
-Invite URL template:
+#### Invite URL:
+Use this URL template to invite your bot:
+```
 https://discord.com/api/oauth2/authorize?client_id=YOUR_BOT_CLIENT_ID&permissions=3146752&scope=bot%20applications.commands
+```
 
-6. API Services Setup:
-OpenAI (Required):
-- Generate an API key
-- Add OPENAI_API_KEY to .env
+### 4. API Services Setup
+
+#### OpenAI (Required):
+1. Go to [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Create an API key
+3. Add to `.env` as `OPENAI_API_KEY`
+
+**Note:** This bot uses OpenAI Whisper for speech-to-text and GPT for conversation responses.
 
 ## Usage
 
-Commands:
-/vc - Join voice channel
-/leave - Leave
-/history - View conversation history
-/status - Check bot status
+### Commands
 
-Voice Interaction Flow:
-1. Join with /vc
-2. Speak
-3. Bot transcribes and responds
-4. Continue conversation
-5. Use /leave to disconnect
+- `/vc` - Join your voice channel and start listening
+- `/leave` - Leave voice channel and save conversation
+- `/history` - View recent conversation history  
+- `/status` - Check bot connection status
 
-## Technical Details
+### Voice Interaction Flow
 
-Audio Processing:
-- Receives PCM 48kHz audio
-- Converts for STT
-- Voice activity detection
-- Silence removal
-
-Speech Recognition:
-Whisper features, cost, language support.
-
-Response Generation:
-GPT models, brief responses, context memory.
-
-Text-to-Speech:
-Removed for simplicity;
-
-## Troubleshooting
-
-Common Issues:
-- Missing imports: reinstall requirements
-- Bot can't connect: check permissions
-- No transcription: check mic + API keys
-
-Performance Tips:
-- Reduce conversation history
-- Monitor API usage
-
-Logs:
-Debug output in console.
+1. **Join**: Use `/vc` while in a voice channel
+2. **Speak**: Talk naturally - the bot listens for speech
+3. **AI Response**: Bot transcribes, generates response, and speaks back
+4. **Continue**: Have natural conversations
+5. **Leave**: Use `/leave` to disconnect and save history
 
