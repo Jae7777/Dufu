@@ -46,11 +46,15 @@ class BotCommands:
     # Command Logic
     # -----------------------------
     async def join_voice(self, interaction: discord.Interaction, bot):
+        
         """Join the user's voice channel and start AI conversation"""
         if not interaction.user.voice:
             return await interaction.response.send_message("❌ You need to be in a voice channel first!", ephemeral=True)
 
         guild_id = interaction.guild.id
+
+        if guild_id not in self.conversation_history:
+            self.conversation_history[guild_id] = []
 
         if guild_id in self.active_connections:
             return await interaction.response.send_message(
