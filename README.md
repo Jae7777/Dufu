@@ -69,8 +69,10 @@ https://discord.com/api/oauth2/authorize?client_id=YOUR_BOT_CLIENT_ID&permission
 2. Create an API key
 3. Add to `.env` as `OPENAI_API_KEY`
 
-**Note:** This bot uses OpenAI Whisper for speech-to-text and GPT for conversation responses.
-
+## Run the bot server
+```
+python bot.py
+```
 ## Usage
 
 ### Commands
@@ -87,6 +89,7 @@ https://discord.com/api/oauth2/authorize?client_id=YOUR_BOT_CLIENT_ID&permission
 3. **AI Response**: Bot transcribes, generates response, and speaks back
 4. **Continue**: Have natural conversations
 5. **Leave**: Use `/leave` to disconnect and save history
+
 
 
 
