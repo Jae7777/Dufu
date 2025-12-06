@@ -13,7 +13,7 @@ This Discord bot joins voice channels, listens to speech, transcribes it using O
 ## 1. Installation
 
 1. Create a Virtual Environment:
-python3 -m venv venv
+python -m venv venv
 
 Activate on Windows:
 venv\Scripts\activate
@@ -87,5 +87,6 @@ https://discord.com/api/oauth2/authorize?client_id=YOUR_BOT_CLIENT_ID&permission
 3. **AI Response**: Bot transcribes, generates response, and speaks back
 4. **Continue**: Have natural conversations
 5. **Leave**: Use `/leave` to disconnect and save history
+
 
 
