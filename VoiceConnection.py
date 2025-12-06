@@ -137,13 +137,21 @@ class VoiceConnection:
                     print(f"Playback error: {error}")
                 else:
                     print(f"✅ Finished playing TTS: {text}")
-                
-                # Clean up temporary file
+
+                # Schedule cleanup on the bot's event loop to avoid deleting
+                # the temp file while FFmpeg still has it open.
+                async def _cleanup():
+                    await asyncio.sleep(0.5)
+                    try:
+                        os.unlink(temp_file_path)
+                        print(f"🗑️ Cleaned up TTS file")
+                    except Exception as cleanup_error:
+                        print(f"Warning: Could not delete TTS file: {cleanup_error}")
+
                 try:
-                    os.unlink(temp_file_path)
-                    print(f"🗑️ Cleaned up TTS file")
-                except Exception as cleanup_error:
-                    print(f"Warning: Could not delete TTS file: {cleanup_error}")
+                    asyncio.run_coroutine_threadsafe(_cleanup(), self.bot.loop)
+                except Exception as schedule_error:
+                    print(f"Failed scheduling TTS cleanup: {schedule_error}")
             
             # Play the audio in the voice channel
             self.voice_client.play(audio_source, after=after_playing)
